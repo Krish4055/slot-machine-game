@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Betting Game</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 20px; 
+            background: #1e1e1e; 
+            color: #fff;
+        }
+        h1 { color: #ffcc00; }
+        #game-section { 
+            display: none; 
+            margin-top: 20px; 
+            background: #2c2c2c; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
+        }
+        input {
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            width: 100px;
+            text-align: center;
+        }
+        label {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+        button { 
+            padding: 10px 20px; 
+            margin-top: 5px;
+            cursor: pointer; 
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        #spin-button { 
+            background: #ffcc00; 
+            color: #000;
+            transition: all 0.2s ease;
+        }
+        #spin-button:hover { 
+            background: #ffaa00;
+            box-shadow: 0 0 10px #ffcc00;
+        }
+        #total-bet { 
+            font-size: 1rem; 
+            margin-top: 10px; 
+            color: #ccc;
+        }
+        pre {
+            font-size: 1.2rem;
+            color: #ffcc00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎰 Betting Game</h1>
+    <h2>Balance: $<span id="balance">0</span></h2>
+
+    <div id="deposit-section">
+        <input type="number" id="deposit" placeholder="Enter amount">
+        <button id="add-money" type="button">Deposit</button>
+    </div>
+
+    <div id="game-section">
+        <div style="display: flex; justify-content: center; gap: 20px; align-items: flex-end;">
+            <div>
+                <label for="lines">Lines</label>
+                <input type="number" id="lines" placeholder="1-3" value="1" min="1" max="3">
+            </div>
+            <div>
+                <label for="bet">Bet Amount</label>
+                <input type="number" id="bet" placeholder="Bet" value="1" min="1">
+            </div>
+            <div>
+                <button id="spin-button" type="button">🎰 Spin</button>
+            </div>
+        </div>
+        <div id="total-bet">Total Bet: $0</div>
+        <div id="result" style="margin-top:20px;"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const linesInput = document.getElementById("lines");
+            const betInput = document.getElementById("bet");
+            const totalBetDiv = document.getElementById("total-bet");
+
+            function updateTotalBet() {
+                const lines = parseInt(linesInput.value) || 0;
+                const bet = parseInt(betInput.value) || 0;
+                totalBetDiv.textContent = `Total Bet: $${lines * bet}`;
+            }
+
+            linesInput.addEventListener("input", updateTotalBet);
+            betInput.addEventListener("input", updateTotalBet);
+            updateTotalBet();
+
+            document.getElementById("add-money").addEventListener("click", async () => {
+                const amount = document.getElementById("deposit").value;
+                if (!amount || amount <= 0) {
+                    alert("Enter a valid deposit amount");
+                    return;
+                }
+                const response = await fetch("/deposit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ amount })
+                });
+                const data = await response.json();
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                document.getElementById("balance").innerText = data.balance;
+                document.getElementById("deposit-section").style.display = "none";
+                document.getElementById("game-section").style.display = "block";
+            });
+
+            document.getElementById("spin-button").addEventListener("click", async () => {
+                const lines = document.getElementById("lines").value;
+                const bet = document.getElementById("bet").value;
+                const response = await fetch("/spin", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ lines, bet })
+                });
+                const data = await response.json();
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                document.getElementById("balance").innerText = data.balance;
+                document.getElementById("result").innerHTML = `
+                    <p>Reels:</p>
+                    <pre>${data.reels.map(row => row.join(" | ")).join("\n")}</pre>
+                    <p>Winnings: $${data.winnings}</p>
+                    <p>Winning Lines: ${data.winning_lines.join(", ") || "None"}</p>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>
