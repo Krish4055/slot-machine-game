@@ -1,15 +1,49 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-import random
-from models import create_or_get_user, update_balance, get_balance
+import random, os
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # Needed for session
+app.secret_key = "supersecretkey"
+
+# Use Postgres on Railway or SQLite locally
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///users.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# User model
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    balance = db.Column(db.Integer, default=0)
+
+# Create tables if not exists
+with app.app_context():
+    db.create_all()
+
+# Helper functions
+def create_or_get_user(username):
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        user = User(username=username, balance=0)
+        db.session.add(user)
+        db.session.commit()
+    return {"id": user.id, "username": user.username, "balance": user.balance}
+
+def update_balance(user_id, new_balance):
+    user = User.query.get(user_id)
+    if user:
+        user.balance = new_balance
+        db.session.commit()
+
+def get_balance(user_id):
+    user = User.query.get(user_id)
+    return user.balance if user else 0
 
 @app.route('/')
 def index():
     if "user_id" not in session:
-        return render_template('login.html')  # Show login page if not logged in
-    return render_template('index.html', username=session["username"], balance=get_balance(session["user_id"]))
+        return render_template('login.html')
+    return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -68,11 +102,10 @@ def spin():
         "winning_lines": winning_lines
     }
 
-# LOGOUT ROUTE - SINGLE DEFINITION
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('index'))  # Redirect to login page
+    return redirect(url_for('index'))
 
 if __name__ == "__main__":
     app.run(debug=True)
