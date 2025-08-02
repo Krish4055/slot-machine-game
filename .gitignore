@@ -1,0 +1,9 @@
+# Ignore local database
+users.db
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore virtual environment
+.venv/
