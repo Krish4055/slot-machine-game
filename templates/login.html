@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - Slot Machine</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #fff; text-align: center; }
+        .container { margin-top: 100px; background: #2c2c2c; padding: 30px; border-radius: 12px; width: 300px; margin-left: auto; margin-right: auto; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        h2 { color: #ffcc00; }
+        input { padding: 10px; margin: 10px 0; border: none; border-radius: 8px; width: 100%; }
+        button { background: #ffcc00; color: #000; border: none; padding: 10px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #ffaa00; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🎰 Slot Machine Login</h2>
+        <input type="text" id="username" placeholder="Enter Username">
+        <button onclick="login()">Login</button>
+    </div>
+    <script>
+        async function login() {
+            const username = document.getElementById("username").value;
+            if (!username) { alert("Enter a username"); return; }
+            const response = await fetch("/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username })
+            });
+            const data = await response.json();
+            if (data.error) { alert(data.error); return; }
+            window.location.href = "/";
+        }
+    </script>
+</body>
+</html>
